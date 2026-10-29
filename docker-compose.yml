@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: supportdesk_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-supportdesk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-supportdesk_password}
+      POSTGRES_DB: ${POSTGRES_DB:-supportdesk}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-supportdesk}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_test:
+    image: postgres:16-alpine
+    container_name: supportdesk_postgres_test
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${TEST_DB_USER:-supportdesk_test}
+      POSTGRES_PASSWORD: ${TEST_DB_PASSWORD:-supportdesk_test_password}
+      POSTGRES_DB: ${TEST_DB_NAME:-supportdesk_test}
+    ports:
+      - '${TEST_DB_PORT:-5433}:5432'
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${TEST_DB_USER:-supportdesk_test}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  postgres_test_data:

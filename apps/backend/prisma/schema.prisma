@@ -1,0 +1,202 @@
+// SupportDesk — Prisma Schema
+// See docs/DATABASE.md for entity relationships and design rationale.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum UserRole {
+  CUSTOMER
+  AGENT
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum NotificationType {
+  TICKET_ASSIGNED
+  TICKET_STATUS_CHANGED
+  TICKET_REPLY
+  TICKET_CREATED
+}
+
+// ============================================================================
+// Models
+// ============================================================================
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  firstName String
+  lastName  String
+  role      UserRole   @default(CUSTOMER)
+  status    UserStatus @default(ACTIVE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  customerTickets  Ticket[]           @relation("CustomerTickets")
+  messages         TicketMessage[]
+  assignments      TicketAssignment[] @relation("AgentAssignments")
+  assignedBy       TicketAssignment[] @relation("AssignedByUser")
+  refreshTokens    RefreshToken[]
+  notifications    Notification[]     @relation("NotificationRecipient")
+  sentNotifications Notification[]   @relation("NotificationActor")
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+model TicketCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tickets Ticket[]
+
+  @@index([isActive])
+  @@map("ticket_categories")
+}
+
+model Ticket {
+  id           String         @id @default(uuid())
+  ticketNumber String         @unique
+  subject      String
+  description  String
+  status       TicketStatus   @default(OPEN)
+  priority     TicketPriority @default(MEDIUM)
+  customerId   String
+  categoryId   String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  resolvedAt   DateTime?
+  closedAt     DateTime?
+
+  // Relations
+  customer    User             @relation("CustomerTickets", fields: [customerId], references: [id])
+  category    TicketCategory?  @relation(fields: [categoryId], references: [id])
+  messages    TicketMessage[]
+  assignments TicketAssignment[]
+  notifications Notification[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([priority])
+  @@index([categoryId])
+  @@index([ticketNumber])
+  @@index([createdAt])
+  @@map("tickets")
+}
+
+// Ticket number sequence — one row, atomically incremented via raw SQL
+// to guarantee uniqueness under concurrent inserts.
+model TicketSequence {
+  id            Int @id @default(1)
+  lastValue     Int @default(0)
+
+  @@map("ticket_sequence")
+}
+
+model TicketMessage {
+  id        String   @id @default(uuid())
+  ticketId  String
+  authorId  String
+  body      String
+  isInternal Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId])
+  @@index([authorId])
+  @@map("ticket_messages")
+}
+
+model TicketAssignment {
+  id         String   @id @default(uuid())
+  ticketId   String
+  agentId    String
+  assignedById String
+  createdAt  DateTime @default(now())
+
+  ticket     Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  agent      User   @relation("AgentAssignments", fields: [agentId], references: [id])
+  assignedBy User   @relation("AssignedByUser", fields: [assignedById], references: [id])
+
+  // Only one active assignment per ticket (latest wins)
+  @@index([ticketId])
+  @@index([agentId])
+  @@map("ticket_assignments")
+}
+
+model Notification {
+  id         String           @id @default(uuid())
+  recipientId String
+  actorId    String?
+  ticketId   String?
+  type       NotificationType
+  title      String
+  body       String
+  isRead     Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+
+  recipient User    @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor     User?   @relation("NotificationActor", fields: [actorId], references: [id])
+  ticket    Ticket? @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}

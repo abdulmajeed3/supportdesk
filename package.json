@@ -1,0 +1,36 @@
+{
+  "name": "supportdesk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SupportDesk — Professional full-stack helpdesk and ticket management system",
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend"
+  ],
+  "scripts": {
+    "backend": "npm run start:dev --workspace=apps/backend",
+    "frontend": "npm run start --workspace=apps/frontend",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "build": "npm run build --workspace=apps/backend && npm run build --workspace=apps/frontend",
+    "test": "npm run test --workspace=apps/backend && npm run test --workspace=apps/frontend",
+    "test:backend": "npm run test --workspace=apps/backend",
+    "test:frontend": "npm run test --workspace=apps/frontend",
+    "lint": "npm run lint --workspace=apps/backend && npm run lint --workspace=apps/frontend",
+    "lint:backend": "npm run lint --workspace=apps/backend",
+    "lint:frontend": "npm run lint --workspace=apps/frontend",
+    "format": "prettier --write \"apps/**/*.{ts,json,html,scss}\"",
+    "format:check": "prettier --check \"apps/**/*.{ts,json,html,scss}\"",
+    "db:migrate": "npm run prisma:migrate --workspace=apps/backend",
+    "db:seed": "npm run prisma:seed --workspace=apps/backend",
+    "db:studio": "npm run prisma:studio --workspace=apps/backend",
+    "db:reset": "npm run prisma:reset --workspace=apps/backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "^3.4.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
