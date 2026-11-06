@@ -86,6 +86,7 @@ export class TicketsService {
       where.OR = [
         { ticketNumber: { contains: search, mode: 'insensitive' } },
         { subject: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 

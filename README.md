@@ -52,13 +52,14 @@ SupportDesk is a focused, production-quality helpdesk application that demonstra
 ### Customer
 - Register and log in with secure JWT authentication
 - Create, view, and search support tickets
+- Search by ticket number, subject, or description body — filters and search term persist in the URL (bookmarkable, shareable)
 - Select category and priority
 - Reply to open tickets
 - Reopen resolved tickets
 - In-app notifications for agent replies and status changes
 
 ### Agent
-- View all tickets and filter by status, priority, category
+- View all tickets and search + filter by status, priority, category — URL query params preserved
 - Assign tickets to themselves
 - Update ticket status with enforced lifecycle transitions
 - Change ticket priority
@@ -460,7 +461,7 @@ See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common issues.
 - [ ] Real-time notifications via WebSocket
 - [ ] Email notifications (SMTP integration)
 - [ ] File attachments on tickets and messages
-- [ ] Advanced filtering and full-text search
+- [ ] Full-text search indexing (GIN/tsvector; current ILIKE suits moderate scale)
 - [ ] SLA configuration and breach alerts
 - [ ] Bulk ticket operations
 - [ ] Audit log for all ticket state changes

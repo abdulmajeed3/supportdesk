@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../../core/services/api.service';
@@ -18,7 +18,7 @@ import { Ticket, PaginatedTickets, STATUS_LABELS, PRIORITY_LABELS } from '../../
       <div class="filters-bar">
         <div class="search-input">
           <span class="search-icon">🔍</span>
-          <input [(ngModel)]="search" (ngModelChange)="onFilter()" placeholder="Search by ticket # or subject..." />
+          <input [(ngModel)]="search" (ngModelChange)="onFilter()" placeholder="Search by ticket #, subject, or description..." />
         </div>
         <select class="form-control" style="width:auto" [(ngModel)]="statusFilter" (ngModelChange)="onFilter()">
           <option value="">All Statuses</option>
@@ -35,6 +35,9 @@ import { Ticket, PaginatedTickets, STATUS_LABELS, PRIORITY_LABELS } from '../../
           <option value="MEDIUM">Medium</option>
           <option value="LOW">Low</option>
         </select>
+        @if (search() || statusFilter() || priorityFilter()) {
+          <button class="btn btn-ghost" style="white-space:nowrap" (click)="clearFilters()">✕ Clear</button>
+        }
       </div>
 
       @if (loading()) {
@@ -93,6 +96,7 @@ import { Ticket, PaginatedTickets, STATUS_LABELS, PRIORITY_LABELS } from '../../
 export class AgentTicketsComponent implements OnInit {
   readonly api = inject(ApiService);
   readonly router = inject(Router);
+  readonly route = inject(ActivatedRoute);
   Math = Math;
 
   loading = signal(true);
@@ -105,15 +109,41 @@ export class AgentTicketsComponent implements OnInit {
 
   private searchTimeout?: ReturnType<typeof setTimeout>;
 
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    const p = this.route.snapshot.queryParams;
+    if (p['search']) this.search.set(p['search']);
+    if (p['status']) this.statusFilter.set(p['status']);
+    if (p['priority']) this.priorityFilter.set(p['priority']);
+    if (p['page']) this.page.set(Number(p['page']) || 1);
+    this.load();
+  }
 
   onFilter() {
     this.page.set(1);
     clearTimeout(this.searchTimeout);
-    this.searchTimeout = setTimeout(() => this.load(), 300);
+    this.searchTimeout = setTimeout(() => { this.syncUrl(); this.load(); }, 300);
   }
 
-  goPage(p: number) { this.page.set(p); this.load(); }
+  goPage(p: number) { this.page.set(p); this.syncUrl(); this.load(); }
+
+  clearFilters() {
+    this.search.set(''); this.statusFilter.set(''); this.priorityFilter.set(''); this.page.set(1);
+    this.syncUrl(); this.load();
+  }
+
+  private syncUrl() {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        search: this.search() || null,
+        status: this.statusFilter() || null,
+        priority: this.priorityFilter() || null,
+        page: this.page() > 1 ? this.page() : null,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
 
   load() {
     this.loading.set(true);

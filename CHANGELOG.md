@@ -10,7 +10,7 @@ Versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- Initial release of SupportDesk helpdesk application
+- **Ticket Search** — full-text search across ticket number, subject, and description body (backend `OR` clause, case-insensitive). Search term and active filters are synced to URL query params (`?search=…&status=…&priority=…&page=…`) with `replaceUrl: true`, making every filtered view bookmarkable and shareable. State is restored from the URL on page load. 300 ms debounce on the search input prevents redundant requests.
 
 ---
 

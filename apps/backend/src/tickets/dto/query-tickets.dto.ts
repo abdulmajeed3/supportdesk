@@ -24,7 +24,7 @@ export class QueryTicketsDto extends PaginationDto {
   @IsUUID()
   agentId?: string;
 
-  @ApiPropertyOptional({ description: 'Search by ticket number or subject' })
+  @ApiPropertyOptional({ description: 'Search by ticket number, subject, or description body' })
   @IsOptional()
   @IsString()
   @MaxLength(200)
